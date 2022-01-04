@@ -30,7 +30,7 @@
                 // return a slice of size `len` from the module's
                 // memory, starting at offset `ptr`
                 const dd = decoder.decode(m.slice(0, Number(len)));
-                console.info('string otrzymany z wasm', dd);
+                console.info(`string otrzymany z wasm """${dd}"""`);
             }
         }
     };
