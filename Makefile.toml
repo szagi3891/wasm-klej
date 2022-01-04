@@ -1,0 +1,27 @@
+[config]
+skip_core_tasks = true
+
+[tasks.clean]
+command = "rm"
+args = [ "-rf", "build" ]
+
+[tasks.build]
+dependencies = [ "clean" ]
+script = [
+    "cargo build --release --target wasm32-unknown-unknown",
+    "mkdir build",
+    "cp target/wasm32-unknown-unknown/release/wasm_klej.wasm build/binary.wasm",
+    "cp src/index.html build",
+    "cp src/index.js build"
+]
+
+[tasks.serve]
+dependencies = [ "build" ]
+install_crate = { crate_name = "basic-http-server", binary = "basic-http-server", test_arg = ["--version"] }
+command = "basic-http-server"
+args = [ "--addr", "127.0.0.1:4444", "./build" ]
+
+[tasks.watch]
+command = "cargo"
+args = [ "watch", "--watch", "./src", "--delay", "0.5", "-x", "make serve" ]
+
