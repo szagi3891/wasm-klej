@@ -1,6 +1,7 @@
 #[link(wasm_import_module = "mod")]
 extern {
     fn log(s: u64);
+    fn log_string(ptr: u64, len: u64);
     // fn alert(s: &str);
 }
 
@@ -10,9 +11,18 @@ fn show_log(info: u64) {
     }
 }
 
+fn show_log_string(str: &str) {
+    let ptr = str.as_ptr();
+    unsafe {
+        log_string(ptr as u64, str.len() as u64);
+    }
+    // log_string()
+}
+
 #[no_mangle]
 fn sum(a: u32, b: u32) -> u32 {
     show_log(444);
+    show_log_string("to jest jakiś string z rusta ....");
 
     a + b
 }
@@ -20,6 +30,11 @@ fn sum(a: u32, b: u32) -> u32 {
 
 //https://radu-matei.com/blog/practical-guide-to-wasm-memory/
 
+/*
+Struktura danych wyraająca pamięć zaalokowaną
+ - moliwość wpisywania po indexie nowych wartości
+ - włąściwość pozwalająca wyciągnięcie ptr w formie u64 i przekazania go do js-a
+*/
 
 #[no_mangle]
 pub fn alloc(len: usize) -> *mut u8 {
@@ -37,7 +52,9 @@ pub fn alloc(len: usize) -> *mut u8 {
     return ptr;
 }
 
-#[no_mangle]
+
+//Info - Dealokacji nigdy js nie będzie wywoływał
+
 pub unsafe fn dealloc(ptr: *mut u8, size: usize) {
     let data = Vec::from_raw_parts(ptr, size, size);
 
