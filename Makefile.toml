@@ -2,17 +2,30 @@
 skip_core_tasks = true
 
 [tasks.clean]
-command = "rm"
-args = [ "-rf", "build" ]
+script = [
+    "rm -rf build",
+    "mkdir build",
+]
 
-[tasks.build]
-dependencies = [ "clean" ]
+[tasks.build-js]
+script = [
+    "npx -p typescript tsc --strict --noUncheckedIndexedAccess --noEmitOnError --lib esnext,dom,es6 --target esnext --module es6 --outDir build-js src/index.ts",
+    "mv build-js/index.js build/index.js",
+    "rm -rf build-js",
+]
+
+[tasks.build-wasm]
 script = [
     "cargo build --release --target wasm32-unknown-unknown",
-    "mkdir build",
     "cp target/wasm32-unknown-unknown/release/wasm_klej.wasm build/binary.wasm",
     "cp src/index.html build",
-    "cp src/index.js build"
+]
+
+[tasks.build]
+dependencies = [
+    "clean",
+    "build-js",
+    "build-wasm",
 ]
 
 [tasks.serve]

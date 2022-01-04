@@ -9,7 +9,7 @@
 
     const imports = {
         mod: {
-            log: (walue) => {
+            log: (walue: number) => {
                 console.info("Log z webassemblera", walue);
             }
         }
@@ -26,6 +26,14 @@
 
     console.info('Uruchamianie 5/5', mod_1);
 
-
+    //@ts-expect-error
     mod_1.instance.exports.sum(33,44);
 })();
+
+// let cachegetUint8Memory0 = null;
+// function getUint8Memory0() {
+//     if (cachegetUint8Memory0 === null || cachegetUint8Memory0.buffer !== wasm.memory.buffer) {
+//         cachegetUint8Memory0 = new Uint8Array(wasm.memory.buffer);
+//     }
+//     return cachegetUint8Memory0;
+// }
