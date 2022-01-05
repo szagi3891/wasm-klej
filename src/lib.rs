@@ -1,3 +1,6 @@
+
+
+
 #[link(wasm_import_module = "mod")]
 extern {
     fn log(s: u64);
