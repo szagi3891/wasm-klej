@@ -1,19 +1,17 @@
-// @ts-nocheck
-
-interface WasmModuleType {
-    exports: WebAssembly.Exports,
+interface WasmModuleType<ExportType> {
+    exports: ExportType, //WebAssembly.Exports,
     getUint8Memory: () => Uint8Array
 }
 
 type DDD = WebAssembly.ModuleImports;
 
-const init_wasm = async (
+const init_wasm = async <ExportType>(
     binary: ArrayBuffer,
     getImports: (
         getModule: () => WebAssembly.WebAssemblyInstantiatedSource,
         getUint8Memory: () => Uint8Array,
     ) => Record<string, WebAssembly.ModuleImports>
-): Promise<WasmModuleType> => {
+): Promise<WasmModuleType<ExportType>> => {
     let module_instance: WebAssembly.WebAssemblyInstantiatedSource;
     const getModule = () => module_instance;
 
@@ -34,6 +32,7 @@ const init_wasm = async (
     module_instance = await WebAssembly.instantiate(binary, getImports(getModule, getUint8Memory));
 
     return {
+        //@ts-expect-error
         exports: module_instance.instance.exports,
         getUint8Memory
     }
@@ -65,12 +64,18 @@ const init_wasm = async (
         }
     });
 
-    const moduleController = await init_wasm(binary, getImports);
+    interface ExportType {
+        alloc: (length: BigInt) => BigInt,
+        sum: (a: number, b: number) => number,
+        str_from_js: () => void,
+    }
+
+    const moduleController = await init_wasm<ExportType>(binary, getImports);
 
     console.info('exports', moduleController.exports);
     console.info('Uruchomiono', moduleController);
 
-    const suma = moduleController.exports.sum(33,44);
+    const suma = moduleController.exports.sum(33, 44);
     console.info(`Suma 33 i 44 = ${suma}`);
 
     let cachedTextEncoder = new TextEncoder();
@@ -82,7 +87,7 @@ const init_wasm = async (
         moduleController.getUint8Memory().subarray(ptr, ptr + buf.length).set(buf);
     };
 
-    push_string("JJJAAAABBBCCCSSSSSaa44");
+    push_string("JJJAAAABBBCCCSSSSSaa55");
     push_string("aaa");
     moduleController.exports.str_from_js();
     moduleController.exports.str_from_js();
