@@ -3,7 +3,12 @@ use std::{cell::RefCell};
 // tasks: RefCell<VecDeque<Rc<crate::task::Task>>>,
 
 struct StackStringAlloc {
-    list: RefCell<Vec<String>>,
+    list: RefCell<Vec<
+        (
+            *mut u8,    //ptr
+            usize,      //size
+        )
+    >>,
 }
 
 impl StackStringAlloc {
@@ -13,26 +18,40 @@ impl StackStringAlloc {
         }
     }
 
-    pub fn alloc(&self, length: u64) -> u64 {
-        let buf = Vec::<u8>::with_capacity(length as usize);
-        let ptr = buf.as_ptr() as u64;
+    pub fn alloc(&self, size: usize) -> *mut u8 {
+        use std::alloc::{alloc, Layout};
+        use std::mem;
 
-        let word = unsafe {
-            String::from_utf8_unchecked(buf)
-        };
+        let align = mem::align_of::<usize>();
+        if let Ok(layout) = Layout::from_size_align(size, align) {
+            unsafe {
+                if layout.size() > 0 {
+                    let ptr = alloc(layout);
+                    if !ptr.is_null() {
 
-        let mut state = self.list.borrow_mut();
-        state.push(word);
+                        let mut state = self.list.borrow_mut();
+                        state.push((ptr, size));
+                        
+                        return ptr;
+                    }
+                } else {
+                    //return align
+                }
+            }
+        }
 
-        ptr
+        panic!("dddd");
     }
 
     pub fn pop(&self) -> String {
         let mut state = self.list.borrow_mut();
-        state.pop().unwrap()
+        let (ptr, size) = state.pop().unwrap();
 
-        //TODO - tutaj mozna wykonać dodatkowe sprawdzenie zeby sie upewnić ze otrzymano poprawny utf8
-        //String --> do Vec<u8> a potem String::from_utf8
+        let data = unsafe {
+            Vec::<u8>::from_raw_parts(ptr, size, size)
+        };
+        
+        String::from_utf8(data).unwrap()
     }
 }
 
@@ -73,7 +92,11 @@ fn sum(a: u32, b: u32) -> u32 {
 fn str_from_js() {
     let str_js = STACK_STRING.with(|state| state.pop());
 
-    let message = format!("string ciut przerobiony przez rust-a ---> {str_js}");
+    // let str_js = String::from_utf8(str_js).unwrap();
+
+    // let ff = "ddd";
+
+    let message = format!("string ciut przerobiony przez rust-a ---> {str_js} len={}", str_js.len());
     show_log_string(message.as_str());
 }
 
@@ -87,17 +110,9 @@ Struktura danych wyraająca pamięć zaalokowaną
 
 #[no_mangle]
 pub fn alloc(len: u64) -> u64 {
-    STACK_STRING.with(|state| state.alloc(len))
+    STACK_STRING.with(|state| state.alloc(len as usize)) as u64
 }
 
-
-//Info - Dealokacji nigdy js nie będzie wywoływał
-
-// pub unsafe fn dealloc(ptr: *mut u8, size: usize) {
-//     let data = Vec::from_raw_parts(ptr, size, size);
-
-//     std::mem::drop(data);
-// }
 
 /*
 js startowy

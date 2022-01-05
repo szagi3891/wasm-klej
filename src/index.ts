@@ -54,8 +54,10 @@
 
 
     let cachegetUint8Memory0: Uint8Array = new Uint8Array(1);
+
     const getUint8Memory0 = () => {
         if (cachegetUint8Memory0.buffer !== module_instance.instance.exports.memory.buffer) {
+            console.info('Realokuję dla nowego rozmiaru', module_instance.instance.exports.memory.buffer);
             cachegetUint8Memory0 = new Uint8Array(module_instance.instance.exports.memory.buffer);
         }
         return cachegetUint8Memory0;
@@ -65,10 +67,19 @@
     const push_string = (arg: string) => {
         const buf = cachedTextEncoder.encode(arg);
         const ptr = Number(module_instance.instance.exports.alloc(BigInt(buf.length)));
+        console.info('wskaźnik', ptr);
+        console.info('buf', buf);
+
+        const nowe_okno_zapisu = getUint8Memory0().subarray(ptr, ptr + buf.length);
+        console.info('len okna zapisu', nowe_okno_zapisu.length);
+        console.info('len buf', buf.length);
+
         getUint8Memory0().subarray(ptr, ptr + buf.length).set(buf);
     };
 
-    push_string("To jest jakiś string z js-aaaaaa");
+    push_string("JJJAAAABBBCCCSSSS");
+    push_string("aaa");
+    module_instance.instance.exports.str_from_js();
     module_instance.instance.exports.str_from_js();
 
     //module_instance.instance.exports.alloc()
