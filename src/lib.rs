@@ -1,5 +1,44 @@
+use std::{cell::RefCell};
 
+// tasks: RefCell<VecDeque<Rc<crate::task::Task>>>,
 
+struct StackStringAlloc {
+    list: RefCell<Vec<String>>,
+}
+
+impl StackStringAlloc {
+    pub fn new() -> StackStringAlloc {
+        StackStringAlloc {
+            list: RefCell::new(Vec::new())
+        }
+    }
+
+    pub fn alloc(&self, length: u64) -> u64 {
+        let buf = Vec::<u8>::with_capacity(length as usize);
+        let ptr = buf.as_ptr() as u64;
+
+        let word = unsafe {
+            String::from_utf8_unchecked(buf)
+        };
+
+        let mut state = self.list.borrow_mut();
+        state.push(word);
+
+        ptr
+    }
+
+    pub fn pop(&self) -> String {
+        let mut state = self.list.borrow_mut();
+        state.pop().unwrap()
+
+        //TODO - tutaj mozna wykonać dodatkowe sprawdzenie zeby sie upewnić ze otrzymano poprawny utf8
+        //String --> do Vec<u8> a potem String::from_utf8
+    }
+}
+
+thread_local! {
+    pub(crate) static STACK_STRING: StackStringAlloc = StackStringAlloc::new();
+}
 
 #[link(wasm_import_module = "mod")]
 extern {
@@ -30,6 +69,13 @@ fn sum(a: u32, b: u32) -> u32 {
     a + b
 }
 
+#[no_mangle]
+fn str_from_js() {
+    let str_js = STACK_STRING.with(|state| state.pop());
+
+    let message = format!("string ciut przerobiony przez rust-a ---> {str_js}");
+    show_log_string(message.as_str());
+}
 
 //https://radu-matei.com/blog/practical-guide-to-wasm-memory/
 
@@ -40,29 +86,18 @@ Struktura danych wyraająca pamięć zaalokowaną
 */
 
 #[no_mangle]
-pub fn alloc(len: usize) -> *mut u8 {
-    // create a new mutable buffer with capacity `len`
-    let mut buf = Vec::with_capacity(len);
-    // take a mutable pointer to the buffer
-    let ptr = buf.as_mut_ptr();
-    // take ownership of the memory block and
-    // ensure that its destructor is not
-    // called when the object goes out of scope
-    // at the end of the function
-    std::mem::forget(buf);
-    // return the pointer so the runtime
-    // can write data at this offset
-    return ptr;
+pub fn alloc(len: u64) -> u64 {
+    STACK_STRING.with(|state| state.alloc(len))
 }
 
 
 //Info - Dealokacji nigdy js nie będzie wywoływał
 
-pub unsafe fn dealloc(ptr: *mut u8, size: usize) {
-    let data = Vec::from_raw_parts(ptr, size, size);
+// pub unsafe fn dealloc(ptr: *mut u8, size: usize) {
+//     let data = Vec::from_raw_parts(ptr, size, size);
 
-    std::mem::drop(data);
-}
+//     std::mem::drop(data);
+// }
 
 /*
 js startowy

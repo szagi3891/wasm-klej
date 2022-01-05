@@ -9,7 +9,7 @@ script = [
 
 [tasks.build-js]
 script = [
-    "npx -p typescript tsc --strict --noUncheckedIndexedAccess --noEmitOnError --lib esnext,dom,es6 --target esnext --module es6 --outDir build-js src/index.ts",
+    "npx -p typescript tsc --strict --noUncheckedIndexedAccess --noEmitOnError --lib esnext,dom,esnext --target esnext --module es6 --outDir build-js src/index.ts",
     "mv build-js/index.js build/index.js",
     "rm -rf build-js",
 ]
