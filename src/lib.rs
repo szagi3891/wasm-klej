@@ -64,6 +64,7 @@ extern {
     fn log(s: u64);
     fn log_string(ptr: u64, len: u64);
     // fn alert(s: &str);
+    //ddd dasdsa
 }
 
 fn show_log(info: u64) {
