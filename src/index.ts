@@ -1,11 +1,6 @@
 (async () => {
-    console.info('Uruchamianie 1/5');
     const resp = await fetch('binary.wasm');
-
-    console.info('Uruchamianie 2/5');
     const binary = await resp.arrayBuffer();
-
-    console.info('Uruchamianie 3/5');
 
     //@ts-expect-error
     let module_instance: WebAssemblyInstantiatedSource;
@@ -43,9 +38,10 @@
     // console.info('Uruchamianie 4/5');
     // const exports = new WebAssembly.Instance(mod, imports).exports;
 
-    console.info('Uruchamianie 5/5', module_instance);
+    console.info('Uruchomiono', module_instance);
 
-    module_instance.instance.exports.sum(33,44);
+    const suma = module_instance.instance.exports.sum(33,44);
+    console.info(`Suma 33 i 44 = ${suma}`);
 
     let cachedTextEncoder = new TextEncoder(
         //@ts-expect-error
@@ -67,12 +63,8 @@
     const push_string = (arg: string) => {
         const buf = cachedTextEncoder.encode(arg);
         const ptr = Number(module_instance.instance.exports.alloc(BigInt(buf.length)));
-        console.info('wskaźnik', ptr);
-        console.info('buf', buf);
 
         const nowe_okno_zapisu = getUint8Memory0().subarray(ptr, ptr + buf.length);
-        console.info('len okna zapisu', nowe_okno_zapisu.length);
-        console.info('len buf', buf.length);
 
         getUint8Memory0().subarray(ptr, ptr + buf.length).set(buf);
     };
