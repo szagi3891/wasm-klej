@@ -9,8 +9,10 @@ script = [
 
 [tasks.build-js]
 script = [
-    "npx -p typescript tsc --strict --noUncheckedIndexedAccess --noEmitOnError --lib esnext,dom,esnext --target esnext --module es6 --outDir build-js src/index.ts",
-    "mv build-js/index.js build/index.js",
+    #"npx -p typescript tsc --strict --noUncheckedIndexedAccess --noEmitOnError --lib esnext,dom,esnext --target esnext --module es6 --outDir build-js src/index.ts",
+    "npx -p typescript tsc --strict --noUncheckedIndexedAccess --noEmitOnError --lib esnext,dom,esnext --target esnext --module es6 --outDir build-js src/ts/main.ts src/ts/wasm_init.ts",
+    #"mv build-js/index.js build/index.js",
+    "npx rollup build-js/main.js --file build/index.js",
     "rm -rf build-js",
 ]
 
@@ -37,4 +39,3 @@ args = [ "--addr", "127.0.0.1:4444", "./build" ]
 [tasks.watch]
 command = "cargo"
 args = [ "watch", "--watch", "./src", "--delay", "0.5", "-x", "make serve" ]
-
