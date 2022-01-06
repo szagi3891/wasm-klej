@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "esnext",
+        "module": "es6",
+        "strict": true,
+        "lib": ["dom", "es6", "esnext"],
+        "downlevelIteration": true,
+        "sourceMap": true,
+        "experimentalDecorators": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noUncheckedIndexedAccess": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "baseUrl": ".",
+        "noEmit": true
+    },
+    "include": [
+        "src/ts"
+    ]
+}
