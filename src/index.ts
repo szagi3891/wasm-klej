@@ -1,11 +1,15 @@
-interface ModuleControllerType<ExportType> {
+interface BaseExportType {
+    alloc: (length: BigInt) => BigInt
+};
+interface ModuleControllerType<ExportType extends BaseExportType> {
     exports: () => ExportType,
     getModule: () => WebAssembly.WebAssemblyInstantiatedSource,
     getUint8Memory: () => Uint8Array,
     decodeText: (ptr: BigInt, length: BigInt) => string,
+    pushString: (value: string) => void,
 }
 
-const init_wasm = async <ExportType>(
+const init_wasm = async <ExportType extends BaseExportType>(
     binary: ArrayBuffer,
     getImports: (controller: ModuleControllerType<ExportType>) => Record<string, WebAssembly.ModuleImports>
 ): Promise<ModuleControllerType<ExportType>> => {
@@ -37,11 +41,22 @@ const init_wasm = async <ExportType>(
         return module_instance.instance.exports;
     };
 
+
+    let cachedTextEncoder = new TextEncoder();
+
+    const pushString = (arg: string) => {
+        const buf = cachedTextEncoder.encode(arg);
+        const ptr = Number(exports().alloc(BigInt(buf.length)));
+
+        getUint8Memory().subarray(ptr, ptr + buf.length).set(buf);
+    };
+
     const moduleController: ModuleControllerType<ExportType> = {
         exports,
         getModule,
         getUint8Memory,
-        decodeText
+        decodeText,
+        pushString
     };
 
     module_instance = await WebAssembly.instantiate(binary, getImports(moduleController));
@@ -79,17 +94,8 @@ const init_wasm = async <ExportType>(
     const suma = controller.exports().sum(33, 44);
     console.info(`Suma 33 i 44 = ${suma}`);
 
-    let cachedTextEncoder = new TextEncoder();
-
-    const push_string = (arg: string) => {
-        const buf = cachedTextEncoder.encode(arg);
-        const ptr = Number(controller.exports().alloc(BigInt(buf.length)));
-
-        controller.getUint8Memory().subarray(ptr, ptr + buf.length).set(buf);
-    };
-
-    push_string("JJJAAAABBBCCCSSSSSaa55");
-    push_string("aaa");
+    controller.pushString("JJJAAAABBBCCCSSSSSaa66");
+    controller.pushString("aaa");
     controller.exports().str_from_js();
     controller.exports().str_from_js();
 })();
