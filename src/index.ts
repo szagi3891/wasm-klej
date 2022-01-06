@@ -89,8 +89,6 @@ const init_wasm = async <ExportType extends BaseExportType>(
 
     const controller = await init_wasm<ExportType>(binary, getImports);
 
-    console.info('exports', controller.exports());
-
     const suma = controller.exports().sum(33, 44);
     console.info(`Suma 33 i 44 = ${suma}`);
 
