@@ -1,17 +1,14 @@
-interface WasmModuleType<ExportType> {
-    exports: ExportType, //WebAssembly.Exports,
-    getUint8Memory: () => Uint8Array
+interface ModuleControllerType<ExportType> {
+    exports: () => ExportType,
+    getModule: () => WebAssembly.WebAssemblyInstantiatedSource,
+    getUint8Memory: () => Uint8Array,
+    decodeText: (ptr: BigInt, length: BigInt) => string,
 }
-
-type DDD = WebAssembly.ModuleImports;
 
 const init_wasm = async <ExportType>(
     binary: ArrayBuffer,
-    getImports: (
-        getModule: () => WebAssembly.WebAssemblyInstantiatedSource,
-        getUint8Memory: () => Uint8Array,
-    ) => Record<string, WebAssembly.ModuleImports>
-): Promise<WasmModuleType<ExportType>> => {
+    getImports: (controller: ModuleControllerType<ExportType>) => Record<string, WebAssembly.ModuleImports>
+): Promise<ModuleControllerType<ExportType>> => {
     let module_instance: WebAssembly.WebAssemblyInstantiatedSource;
     const getModule = () => module_instance;
 
@@ -29,40 +26,33 @@ const init_wasm = async <ExportType>(
         }
     };
 
-    module_instance = await WebAssembly.instantiate(binary, getImports(getModule, getUint8Memory));
+    const decodeText = (ptr: BigInt, length: BigInt): string => {
+        const m = getUint8Memory().subarray(Number(ptr), Number(ptr) + Number(length));
+        var decoder = new TextDecoder("utf-8");
+        return decoder.decode(m.slice(0, Number(length)));
+    };
 
-    return {
+    const exports = (): ExportType => {
         //@ts-expect-error
-        exports: module_instance.instance.exports,
-        getUint8Memory
-    }
+        return module_instance.instance.exports;
+    };
+
+    const moduleController: ModuleControllerType<ExportType> = {
+        exports,
+        getModule,
+        getUint8Memory,
+        decodeText
+    };
+
+    module_instance = await WebAssembly.instantiate(binary, getImports(moduleController));
+
+    return moduleController;
 };
 
-
-
-// WebAssembly.Memory
 
 (async () => {
     const resp = await fetch('binary.wasm');
     const binary = await resp.arrayBuffer();
-
-    const getImports = (
-        getSelfModule: () => WebAssembly.WebAssemblyInstantiatedSource,
-        getUint8Memory: () => Uint8Array,
-    ) => ({
-        mod: {
-            log: (walue: BigInt) => {
-                console.info("Log z webassemblera", walue);
-            },
-            log_string: (ptr: BigInt, len: BigInt) => {
-                const m = getUint8Memory().subarray(Number(ptr), Number(ptr) + Number(len));
-
-                var decoder = new TextDecoder("utf-8");
-                const dd = decoder.decode(m.slice(0, Number(len)));
-                console.info(`string otrzymany z wasm """${dd}"""`);
-            }
-        }
-    });
 
     interface ExportType {
         alloc: (length: BigInt) => BigInt,
@@ -70,25 +60,36 @@ const init_wasm = async <ExportType>(
         str_from_js: () => void,
     }
 
-    const moduleController = await init_wasm<ExportType>(binary, getImports);
+    const getImports = (controller: ModuleControllerType<ExportType>) => ({
+        mod: {
+            log: (walue: BigInt) => {
+                console.info("Log z webassemblera", walue);
+            },
+            log_string: (ptr: BigInt, len: BigInt) => {
+                const text = controller.decodeText(ptr, len);
+                console.info(`string otrzymany z wasm """${text}"""`);
+            }
+        }
+    });
 
-    console.info('exports', moduleController.exports);
-    console.info('Uruchomiono', moduleController);
+    const controller = await init_wasm<ExportType>(binary, getImports);
 
-    const suma = moduleController.exports.sum(33, 44);
+    console.info('exports', controller.exports());
+
+    const suma = controller.exports().sum(33, 44);
     console.info(`Suma 33 i 44 = ${suma}`);
 
     let cachedTextEncoder = new TextEncoder();
 
     const push_string = (arg: string) => {
         const buf = cachedTextEncoder.encode(arg);
-        const ptr = Number(moduleController.exports.alloc(BigInt(buf.length)));
+        const ptr = Number(controller.exports().alloc(BigInt(buf.length)));
 
-        moduleController.getUint8Memory().subarray(ptr, ptr + buf.length).set(buf);
+        controller.getUint8Memory().subarray(ptr, ptr + buf.length).set(buf);
     };
 
     push_string("JJJAAAABBBCCCSSSSSaa55");
     push_string("aaa");
-    moduleController.exports.str_from_js();
-    moduleController.exports.str_from_js();
+    controller.exports().str_from_js();
+    controller.exports().str_from_js();
 })();
