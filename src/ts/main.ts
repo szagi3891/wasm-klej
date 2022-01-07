@@ -1,9 +1,6 @@
-import { init_wasm, ModuleControllerType } from './wasm_init';
+import { wasmInit, ModuleControllerType } from './wasm_init';
 
 (async () => {
-    const resp = await fetch('binary.wasm');
-    const binary = await resp.arrayBuffer();
-
     interface ExportType {
         alloc: (length: BigInt) => BigInt,
         sum: (a: number, b: number) => number,
@@ -22,7 +19,7 @@ import { init_wasm, ModuleControllerType } from './wasm_init';
         }
     });
 
-    const controller = await init_wasm<ExportType>(binary, getImports);
+    const controller = await wasmInit<ExportType>('binary.wasm', getImports);
 
     const suma = controller.exports().sum(33, 44);
     console.info(`Suma 33 i 44 = ${suma}`);

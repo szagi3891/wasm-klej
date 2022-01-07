@@ -10,10 +10,14 @@ export interface ModuleControllerType<ExportType extends BaseExportType> {
     pushString: (value: string) => void,
 }
 
-export const init_wasm = async <ExportType extends BaseExportType>(
-    binary: ArrayBuffer,
+export const wasmInit = async <ExportType extends BaseExportType>(
+    wasmBinPath: string,
     getImports: (controller: ModuleControllerType<ExportType>) => Record<string, WebAssembly.ModuleImports>
 ): Promise<ModuleControllerType<ExportType>> => {
+    // binary: ArrayBuffer,
+    const resp = await fetch(wasmBinPath);
+    const binary = await resp.arrayBuffer();
+
     let module_instance: WebAssembly.WebAssemblyInstantiatedSource;
     const getModule = () => module_instance;
 
