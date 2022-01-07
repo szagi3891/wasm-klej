@@ -1,4 +1,4 @@
-interface BaseExportType {
+export interface BaseExportType {
     alloc: (length: BigInt) => BigInt
 };
 
@@ -10,11 +10,10 @@ export interface ModuleControllerType<ExportType extends BaseExportType> {
     pushString: (value: string) => void,
 }
 
-export const wasmInit = async <ExportType extends BaseExportType>(
+export const wasmInit = async <ImportType extends Record<string, Function>, ExportType extends BaseExportType>(
     wasmBinPath: string,
-    getImports: (controller: ModuleControllerType<ExportType>) => Record<string, WebAssembly.ModuleImports>
+    imports: { mod: ImportType },
 ): Promise<ModuleControllerType<ExportType>> => {
-    // binary: ArrayBuffer,
     const resp = await fetch(wasmBinPath);
     const binary = await resp.arrayBuffer();
 
@@ -26,7 +25,7 @@ export const wasmInit = async <ExportType extends BaseExportType>(
     const getUint8Memory = () => {
         if (module_instance.instance.exports.memory instanceof WebAssembly.Memory) {
             if (cachegetUint8Memory.buffer !== module_instance.instance.exports.memory.buffer) {
-                console.info('Realokuję dla nowego rozmiaru', module_instance.instance.exports.memory.buffer);
+                console.info('getUint8Memory: reallocate the Uint8Array for a new size', module_instance.instance.exports.memory.buffer.byteLength);
                 cachegetUint8Memory = new Uint8Array(module_instance.instance.exports.memory.buffer);
             }
             return cachegetUint8Memory;
@@ -64,7 +63,8 @@ export const wasmInit = async <ExportType extends BaseExportType>(
         pushString
     };
 
-    module_instance = await WebAssembly.instantiate(binary, getImports(moduleController));
+    const imports_inst: Record<string, WebAssembly.ModuleImports> = imports;
+    module_instance = await WebAssembly.instantiate(binary, imports_inst);
 
     return moduleController;
 };

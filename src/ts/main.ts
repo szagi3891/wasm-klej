@@ -1,25 +1,46 @@
-import { wasmInit, ModuleControllerType } from './wasm_init';
+import { wasmInit, ModuleControllerType, BaseExportType } from './wasm_init';
+
+type ImportType = {
+    log: (walue: BigInt) => void,
+    log_string: (ptr: BigInt, len: BigInt) => void,
+    // alert: (message: string) => void,
+}
+
+type ExportType = {
+    alloc: (length: BigInt) => BigInt,
+    sum: (a: number, b: number) => number,
+    str_from_js: () => void,
+}
+
 
 (async () => {
-    interface ExportType {
-        alloc: (length: BigInt) => BigInt,
-        sum: (a: number, b: number) => number,
-        str_from_js: () => void,
-    }
 
-    const getImports = (controller: ModuleControllerType<ExportType>) => ({
+    //@ts-expect-error
+    let log: (walue: BigInt) => void = null;
+    //@ts-expect-error
+    let log_string: (ptr: BigInt, len: BigInt) => void = null;
+
+    const controller = await wasmInit<ImportType, ExportType>('binary.wasm', {
         mod: {
             log: (walue: BigInt) => {
-                console.info("Log z webassemblera", walue);
+                log(walue);
             },
             log_string: (ptr: BigInt, len: BigInt) => {
-                const text = controller.decodeText(ptr, len);
-                console.info(`string otrzymany z wasm """${text}"""`);
-            }
+                log_string(ptr, len)
+            },
         }
     });
 
-    const controller = await wasmInit<ExportType>('binary.wasm', getImports);
+    //TODO - miejsce na inicjację stanu
+
+    log = (walue: BigInt) => {
+        console.info("Log z webassemblera", walue);
+    };
+
+    log_string = (ptr: BigInt, len: BigInt) => {
+        const text = controller.decodeText(ptr, len);
+        console.info(`string otrzymany z wasm """${text}"""`);
+    }
 
     const suma = controller.exports().sum(33, 44);
     console.info(`Suma 33 i 44 = ${suma}`);
