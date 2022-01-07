@@ -3,9 +3,7 @@ export interface BaseExportType {
 };
 
 export interface ModuleControllerType<ExportType extends BaseExportType> {
-    exports: () => ExportType,
-    getModule: () => WebAssembly.WebAssemblyInstantiatedSource,
-    getUint8Memory: () => Uint8Array,
+    exports: ExportType,
     decodeText: (ptr: BigInt, length: BigInt) => string,
     pushString: (value: string) => void,
 }
@@ -17,8 +15,8 @@ export const wasmInit = async <ImportType extends Record<string, Function>, Expo
     const resp = await fetch(wasmBinPath);
     const binary = await resp.arrayBuffer();
 
-    let module_instance: WebAssembly.WebAssemblyInstantiatedSource;
-    const getModule = () => module_instance;
+    const imports_inst: Record<string, WebAssembly.ModuleImports> = imports;
+    const module_instance = await WebAssembly.instantiate(binary, imports_inst);
 
     let cachegetUint8Memory: Uint8Array = new Uint8Array(1);
 
@@ -40,31 +38,21 @@ export const wasmInit = async <ImportType extends Record<string, Function>, Expo
         return decoder.decode(m.slice(0, Number(length)));
     };
 
-    const exports = (): ExportType => {
-        //@ts-expect-error
-        return module_instance.instance.exports;
-    };
-
+    //@ts-expect-error
+    const exports: ExportType = module_instance.instance.exports;
 
     let cachedTextEncoder = new TextEncoder();
 
     const pushString = (arg: string) => {
         const buf = cachedTextEncoder.encode(arg);
-        const ptr = Number(exports().alloc(BigInt(buf.length)));
+        const ptr = Number(exports.alloc(BigInt(buf.length)));
 
         getUint8Memory().subarray(ptr, ptr + buf.length).set(buf);
     };
 
-    const moduleController: ModuleControllerType<ExportType> = {
+    return {
         exports,
-        getModule,
-        getUint8Memory,
         decodeText,
         pushString
     };
-
-    const imports_inst: Record<string, WebAssembly.ModuleImports> = imports;
-    module_instance = await WebAssembly.instantiate(binary, imports_inst);
-
-    return moduleController;
 };
