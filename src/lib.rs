@@ -24,6 +24,11 @@ mod extern_fn {
 }
 
 #[no_mangle]
+pub fn alloc(len: u64) -> u64 {
+    stack::STACK_STRING.with(|state| state.alloc(len as usize)) as u64
+}
+
+#[no_mangle]
 fn sum(a: u32, b: u32) -> u32 {
     extern_fn::log(444);
     extern_fn::log_string("to jest jakiś string z rusta ....");
@@ -37,9 +42,4 @@ fn str_from_js() {
 
     let message = format!("string ciut przerobiony przez rust-a ---> {str_js} len={}", str_js.len());
     extern_fn::log_string(message.as_str());
-}
-
-#[no_mangle]
-pub fn alloc(len: u64) -> u64 {
-    stack::STACK_STRING.with(|state| state.alloc(len as usize)) as u64
 }

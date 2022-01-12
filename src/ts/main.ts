@@ -13,32 +13,21 @@ type ExportType = {
 }
 
 (async () => {
-    //@ts-expect-error
-    let log: (walue: BigInt) => void = null;
-    //@ts-expect-error
-    let log_string: (ptr: BigInt, len: BigInt) => void = null;
-
-    const wasm = await wasmInit<ImportType, ExportType>('binary.wasm', {
-        mod: {
-            log: (walue: BigInt) => {
-                log(walue);
-            },
-            log_string: (ptr: BigInt, len: BigInt) => {
-                log_string(ptr, len)
-            },
-        }
-    });
-
-    //TODO - miejsce na inicjację stanu
-
-    log = (walue: BigInt) => {
+    const log = (walue: BigInt) => {
         console.info("Log z webassemblera", walue);
     };
 
-    log_string = (ptr: BigInt, len: BigInt) => {
+    const log_string = (ptr: BigInt, len: BigInt) => {
         const text = wasm.decodeText(ptr, len);
         console.info(`string otrzymany z wasm """${text}"""`);
     }
+
+    const wasm = await wasmInit<ImportType, ExportType>('binary.wasm', {
+        mod: {
+            log,
+            log_string,
+        }
+    });
 
     const suma = wasm.exports.sum(33, 44);
     console.info(`Suma 33 i 44 = ${suma}`);

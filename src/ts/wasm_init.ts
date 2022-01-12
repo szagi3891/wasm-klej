@@ -41,7 +41,7 @@ export const wasmInit = async <ImportType extends Record<string, Function>, Expo
     //@ts-expect-error
     const exports: ExportType = module_instance.instance.exports;
 
-    let cachedTextEncoder = new TextEncoder();
+    const cachedTextEncoder = new TextEncoder();
 
     const pushString = (arg: string) => {
         const buf = cachedTextEncoder.encode(arg);
