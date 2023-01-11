@@ -10,6 +10,7 @@ type ExportType = {
     alloc: (length: BigInt) => BigInt,
     sum: (a: number, b: number) => number,
     str_from_js: () => void,
+    call_native_string: (str_js: string) => void,
 }
 
 (async () => {
@@ -36,4 +37,5 @@ type ExportType = {
     wasm.pushString("aaa");
     wasm.exports.str_from_js();
     wasm.exports.str_from_js();
+    wasm.exports.call_native_string("...eeerrrtttrrreee...");
 })();

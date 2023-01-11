@@ -1,5 +1,14 @@
 mod stack;
 
+use stack::{StackStringAlloc};
+
+thread_local! {
+    pub(crate) static STACK_STRING: StackStringAlloc = StackStringAlloc::new({
+        extern_fn::log_string("init stosu");
+        println!("hello world");
+    });
+}
+
 mod extern_fn {
     mod inner_unsafe {
         #[link(wasm_import_module = "mod")]
@@ -25,7 +34,8 @@ mod extern_fn {
 
 #[no_mangle]
 pub fn alloc(len: u64) -> u64 {
-    stack::STACK_STRING.with(|state| state.alloc(len as usize)) as u64
+    extern_fn::log_string(format!("alokuję {len}").as_str());
+    STACK_STRING.with(|state| state.alloc(len as usize)) as u64
 }
 
 #[no_mangle]
@@ -38,8 +48,10 @@ fn sum(a: u32, b: u32) -> u32 {
 
 #[no_mangle]
 fn str_from_js() {
-    let str_js = stack::STACK_STRING.with(|state| state.pop());
+    let str_js = STACK_STRING.with(|state| state.pop());
 
     let message = format!("string ciut przerobiony przez rust-a ---> {str_js} len={}", str_js.len());
     extern_fn::log_string(message.as_str());
 }
+
+//downcast_ref

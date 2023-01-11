@@ -7,7 +7,7 @@ pub struct StackStringAlloc {
 }
 
 impl StackStringAlloc {
-    pub fn new() -> StackStringAlloc {
+    pub fn new(_: ()) -> StackStringAlloc {
         StackStringAlloc {
             list: RefCell::new(Vec::new())
         }
@@ -48,8 +48,4 @@ impl StackStringAlloc {
         
         String::from_utf8(data).unwrap()
     }
-}
-
-thread_local! {
-    pub(crate) static STACK_STRING: StackStringAlloc = StackStringAlloc::new();
 }
